@@ -1,0 +1,38 @@
+{
+  "name": "reminder-app-server",
+  "version": "1.0.0",
+  "description": "Backend para la aplicación de recordatorios",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "test:e2e": "jest --config jest.e2e.config.js",
+    "lint": "eslint .",
+    "swagger-autogen": "node swagger.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.6.3",
+    "firebase-admin": "^11.11.0",
+    "dotenv": "^16.3.1",
+    "express-validator": "^7.0.1",
+    "openai": "^4.0.0",
+    "swagger-ui-express": "^5.0.0",
+    "swagger-autogen": "^2.23.7",
+    "cors": "^2.8.5",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "nodemon": "^3.0.1",
+    "eslint": "^8.52.0"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
