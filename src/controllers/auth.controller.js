@@ -27,8 +27,11 @@ const signUp = async (req, res) => {
         firebaseUid: userRecord.uid
       });
 
-      // Generar custom token
-      const customToken = await admin.auth().createCustomToken(userRecord.uid);
+      // Generar custom token con opciones adicionales
+      const customToken = await admin.auth().createCustomToken(userRecord.uid, {
+        // Datos adicionales que quieras incluir
+        email: user.email
+      });
 
       res.status(201).json({
         user: {
@@ -36,7 +39,7 @@ const signUp = async (req, res) => {
           email: user.email
         },
         customToken,
-        message: "Usa este customToken para obtener un idToken usando Firebase Auth en el cliente"
+        message: "Usa este customToken inmediatamente para obtener un idToken"
       });
 
     } catch (firebaseError) {

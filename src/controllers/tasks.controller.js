@@ -1,52 +1,123 @@
 const Task = require('../models/task.model');
 const Category = require('../models/category.model');
+const { detectCategory } = require('../services/openai.service');
 const { logger } = require('../utils/logger');
 
 const createTask = async (req, res) => {
   try {
-    const { title, dueIn, categoryId } = req.body;
-    
-    const task = new Task({
-      title,
-      dueIn: dueIn ? new Date(dueIn.split('/').reverse().join('-')) : null,
-      userId: req.user._id,
-      categoryId
-    });
+    const { title, dueIn } = req.body;
+    const userId = req.decodedToken.uid;
 
-    await task.save();
-    res.status(201).json(task);
+    // Validar el formato de fecha DD/MM/YYYY
+    if (dueIn && !/^\d{2}\/\d{2}\/\d{4}$/.test(dueIn)) {
+      return res.status(400).json({
+        error: 'INVALID_DATE',
+        message: 'El formato de fecha debe ser DD/MM/YYYY'
+      });
+    }
+
+    // Validar que la fecha sea válida
+    if (dueIn) {
+      const [day, month, year] = dueIn.split('/');
+      const date = new Date(year, month - 1, day);
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({
+          error: 'INVALID_DATE',
+          message: 'La fecha no es válida'
+        });
+      }
+    }
+
+    try {
+      // Obtener categorías existentes del usuario
+      const existingCategories = await Category.find({ userId });
+
+      // Detectar categoría usando OpenAI
+      const suggestedCategory = await detectCategory(title, existingCategories);
+
+      // Buscar si la categoría ya existe
+      let category = await Category.findOne({ 
+        userId, 
+        title: suggestedCategory 
+      });
+
+      // Si no existe, crear nueva categoría
+      if (!category) {
+        category = await Category.create({
+          title: suggestedCategory,
+          userId,
+          color: generateRandomColor() // Función auxiliar que definiremos
+        });
+      }
+
+      // Crear la tarea con la categoría asignada
+      const task = await Task.create({
+        title,
+        dueIn,
+        userId,
+        categoryId: category._id
+      });
+
+      // Devolver la tarea con la información de la categoría
+      const taskWithCategory = await Task.findById(task._id)
+        .populate('categoryId')
+        .lean();
+
+      res.status(201).json(taskWithCategory);
+
+    } catch (aiError) {
+      logger.error('Error con IA:', aiError);
+      // Si falla la IA, crear tarea sin categoría
+      const task = await Task.create({
+        title,
+        dueIn,
+        userId
+      });
+      res.status(201).json(task);
+    }
+
   } catch (error) {
     logger.error('Error creando tarea:', error);
-    res.status(500).json({ message: 'Error al crear la tarea' });
+    res.status(500).json({
+      error: 'TASK_CREATE_ERROR',
+      message: 'Error al crear la tarea'
+    });
   }
 };
 
 const getTasks = async (req, res) => {
   try {
-    const categories = await Category.find({ userId: req.user._id });
-    const tasks = await Task.find({ userId: req.user._id });
+    const userId = req.decodedToken.uid;
+    const tasks = await Task.find({ userId })
+      .lean()
+      .exec();
 
-    const response = {
-      categories: categories.map(category => ({
-        id: category._id,
-        title: category.title,
-        color: category.color,
-        tasks: tasks
-          .filter(task => task.categoryId?.toString() === category._id.toString())
-          .map(task => ({
-            id: task._id,
-            title: task.title,
-            completed: task.completed,
-            dueIn: task.dueIn ? task.dueIn.toLocaleDateString('es-ES') : undefined
-          }))
-      }))
-    };
-
-    res.json(response);
+    res.json(tasks);  // Ya no necesitamos formatear las fechas
   } catch (error) {
     logger.error('Error obteniendo tareas:', error);
-    res.status(500).json({ message: 'Error al obtener las tareas' });
+    res.status(500).json({
+      error: 'TASK_FETCH_ERROR',
+      message: 'Error al obtener las tareas'
+    });
   }
+};
+
+// Función auxiliar para formatear fechas
+const formatDate = (date) => {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+// Función auxiliar para generar colores aleatorios
+const generateRandomColor = () => {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
+    '#D4A5A5', '#9FA8DA', '#FFE082', '#A5D6A7', '#EF9A9A'
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
 };
 
 module.exports = {

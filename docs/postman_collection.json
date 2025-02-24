@@ -36,6 +36,7 @@
             "header": [],
             "url": {
               "raw": "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key={{firebaseApiKey}}",
+              "protocol": "https",
               "host": ["identitytoolkit.googleapis.com"],
               "path": ["v1", "accounts:signInWithCustomToken"],
               "query": [
@@ -54,7 +55,21 @@
                 }
               }
             },
-            "description": "Intercambia el customToken por un idToken válido. El idToken es el que se usa para las peticiones autenticadas."
+            "description": "Intercambia el customToken por un idToken válido. El idToken es el que se usa para las peticiones autenticadas.",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 200) {",
+                    "    const jsonData = pm.response.json();",
+                    "    pm.environment.set('idToken', jsonData.idToken);",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
           }
         },
         {
@@ -88,7 +103,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{authToken}}",
+                "value": "Bearer {{idToken}}",
                 "type": "text"
               }
             ],
@@ -115,7 +130,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{authToken}}",
+                "value": "Bearer {{idToken}}",
                 "type": "text"
               }
             ],

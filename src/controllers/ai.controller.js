@@ -31,7 +31,7 @@ const processVoiceToTask = async (req, res) => {
 
 const autoCategorize = async (req, res) => {
   try {
-    const tasks = await Task.find({ userId: req.user._id, categoryId: null });
+    const tasks = await Task.find({ userId: req.decodedToken.uid});
     
     if (tasks.length === 0) {
       return res.json({ message: 'No hay tareas para categorizar' });
@@ -44,13 +44,13 @@ const autoCategorize = async (req, res) => {
       const newCategory = await Category.create({
         title: category.title,
         color: category.color,
-        userId: req.user._id
+        userId: req.decodedToken.uid
       });
 
       await Task.updateMany(
         { 
           _id: { $in: category.taskIds },
-          userId: req.user._id 
+          userId: req.decodedToken.uid
         },
         { categoryId: newCategory._id }
       );

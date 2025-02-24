@@ -5,12 +5,18 @@ const taskSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  dueIn: {
+    type: String,
+    validate: {
+      validator: function(v) {
+        return !v || /^\d{2}\/\d{2}\/\d{4}$/.test(v);
+      },
+      message: 'La fecha debe tener el formato DD/MM/YYYY'
+    }
+  },
   completed: {
     type: Boolean,
     default: false
-  },
-  dueIn: {
-    type: Date
   },
   userId: {
     type: String,
