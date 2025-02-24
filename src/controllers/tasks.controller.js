@@ -1,6 +1,6 @@
 const Task = require('../models/task.model');
 const Category = require('../models/category.model');
-const { detectCategory } = require('../services/openai.service');
+const { detectCategory } = require('../services/ai.service');
 const { logger } = require('../utils/logger');
 
 const createTask = async (req, res) => {
@@ -88,11 +88,44 @@ const createTask = async (req, res) => {
 const getTasks = async (req, res) => {
   try {
     const userId = req.decodedToken.uid;
-    const tasks = await Task.find({ userId })
-      .lean()
-      .exec();
 
-    res.json(tasks);  // Ya no necesitamos formatear las fechas
+    // Obtener todas las tareas del usuario con sus categorías
+    const tasks = await Task.find({ userId })
+      .populate('categoryId')
+      .lean();
+
+    // Agrupar tareas por categoría
+    const tasksByCategory = tasks.reduce((acc, task) => {
+      // Si la tarea no tiene categoría, la ignoramos
+      if (!task.categoryId) return acc;
+
+      const categoryId = task.categoryId._id.toString();
+
+      // Si la categoría no existe en el acumulador, la creamos
+      if (!acc[categoryId]) {
+        acc[categoryId] = {
+          id: categoryId,
+          title: task.categoryId.title,
+          color: task.categoryId.color,
+          tasks: []
+        };
+      }
+
+      // Añadir la tarea a su categoría
+      acc[categoryId].tasks.push({
+        id: task._id.toString(),
+        title: task.title,
+        dueIn: task.dueIn,
+        completed: task.completed
+      });
+
+      return acc;
+    }, {});
+
+    // Convertir el objeto a array
+    const categories = Object.values(tasksByCategory);
+
+    res.json({ categories });
   } catch (error) {
     logger.error('Error obteniendo tareas:', error);
     res.status(500).json({

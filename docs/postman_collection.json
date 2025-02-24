@@ -173,24 +173,6 @@
               ]
             }
           }
-        },
-        {
-          "name": "Auto Categorize",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auto-categorize",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auto-categorize"]
-            }
-          }
         }
       ]
     }

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const app = require('../../../src/app');
 const Task = require('../../../src/models/task.model');
 const { generateTestToken } = require('../../helpers/auth');
+const Category = require('../../../src/models/category.model');
 
 describe('Tasks Routes', () => {
   let authToken;
@@ -51,11 +52,28 @@ describe('Tasks Routes', () => {
   });
 
   describe('GET /api/tasks', () => {
-    it('debería obtener las tareas del usuario', async () => {
+    it('debería obtener las tareas agrupadas por categorías', async () => {
+      // Crear una categoría de prueba
+      const category = await Category.create({
+        title: 'Test Category',
+        color: '#FF6B6B',
+        userId
+      });
+
       // Crear algunas tareas de prueba
       await Task.create([
-        { title: 'Tarea 1', userId },
-        { title: 'Tarea 2', userId }
+        { 
+          title: 'Tarea 1', 
+          userId,
+          categoryId: category._id,
+          completed: false
+        },
+        { 
+          title: 'Tarea 2', 
+          userId,
+          categoryId: category._id,
+          completed: true
+        }
       ]);
 
       const response = await request(app)
@@ -63,7 +81,10 @@ describe('Tasks Routes', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.categories).toBeDefined();
+      expect(response.body).toHaveProperty('categories');
+      expect(Array.isArray(response.body.categories)).toBe(true);
+      expect(response.body.categories[0]).toHaveProperty('tasks');
+      expect(Array.isArray(response.body.categories[0].tasks)).toBe(true);
     });
   });
 }); 

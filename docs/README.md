@@ -61,7 +61,6 @@ Authorization: Bearer <id-token>
 
 #### AI Features
 - POST /api/voice-to-task - Convertir audio a tareas
-- POST /api/auto-categorize - Categorizar tareas automáticamente
 
 ## Colección de Postman
 
